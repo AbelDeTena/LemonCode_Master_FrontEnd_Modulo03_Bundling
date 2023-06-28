@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>03 BUNDLER</title>
+</head>
+<body>
+  <header>
+    <img src="./logo_2.png" alt="logo">
+    <h1 class="object"> Modulo 03 </h1>
+    <h2 class="open">Bundler con Webpack</h2>
+  </header>
+  <div class="container">
+    <section>
+      <h3 class="open">Introducción</h3>
+      <p>Los objetivos a cumplir en este primer laboratorio del modulo 03 Bundler son:</p>
+      <ul>
+        <li>Montar un Bundler con Webpack</li>
+        <li>Trabajar con archivos de imagen</li>
+        <li>Dar estilos mediante Sass</li>
+        <li>Habilitar el uso de Typescript</li>
+      </ul>
+      <h3 class="close"></h3>
+    </section>
+    <section>
+      <h3 class="open">Instalar webpack </h3>
+      <p>
+        El primer paso va a consistir en iniciar el proyecto. Para ello se
+        abre la consola y ejecutamos el siguiente comando. Requiere el gestor
+        de paquetes de Node.js
+      </p>
+      <pre class="output-content">npm init -y</pre><p>
+        A continuación instalaremos Webpack, el bundler y Webpack-cli
+        (Comand-Line-Interface) para poder trabajar con él. Agregamos
+        --save-dev ya que son dependencias de desarrollo que no serán
+        necesarias en el entorno de producción.
+      </p>
+      <pre class="output-content">npm install webpack webpack-cli --save-dev</pre>
+      <p>Por ultimo, dentro de nuestro archivo de package.json modificaremos la sección "scripts", la cual define que
+        comandos se pueden ejecutar utilizando el comando "npm run". Agregamos la opcion "build" con webpack en "--mode
+        development" para que construya el proyecto. Y eliminamos la opción "test" que no será necesaria.       
+      </p>
+      <pre class="output-content">
+<span class="file-line">package.json</span>
+
+"scripts": {
+  <span class="add-line">+ "build": "webpack --mode development"</span>
+  <span class="delete-line">- "test": "echo \"Error: no test specified\" && exit 1"</span>
+}
+</pre>
+<p>En adelante la forma de trabajar con webpack tendrá que abordar las siguientes situaciones.</p>
+<p>En primer lugar asegurarnos de que los archivos con los que queremos trabajar lleguen por algún medio a la red de webpack. Ya sea indicando la ruta mediante puntos de entrada o importando unos archivos dentro de otros.</p>
+<p>A continuación tendremos que dotar a webpack de las herramientas necesarias para poder procesar estos archivos. Para estas situaciones tendremos los loaders.</p>
+<p>Y por ultimo podremos extender las capacidades de webpack mediante el uso de plugins.</p>
+      <h3 class="close"></h3>
+    </section>
+    <section>
+      <h3 class="open">Instalar babel</h3>
+      <p>A continuación instalaremos babel. Su función será la de transpilar el código (jsnext o typescript) a versiones
+        compatibles con los navegadores. @babel/cli, nos permitira ejecutar los comandos; @babel/core, se encarga de la
+        transformación del código; @babel/preset-env, configura los plugins y polyfills necesarios en destino.</p>
+      <pre class="output-content">
+npm install @babel/cli @babel/core @babel/preset-env --save-dev
+</pre>
+
+      <p>Además necesitaremos instalar babel-loader, para que webpack pueda procesar los archivos.</p>
+      <pre class="output-content">
+npm install babel-loader --save-dev
+</pre>
+
+      <p>A continuación tendremos que crear un archivo .babelrc para hacer una breve configuración de babel,
+        especificandolé que utilice los presets que hemos instalado anteriormente.</p>
+      <pre class="output-content">
+<span class="file-line">.babelrc</span> 
+<span class="add-line">
+{
+"presets": ["@babel/preset-env"]
+}</span>
+</pre>
+
+      <p>Por ultimo, tendremos que crear nuestro archivo de configuración de webpack, y establecer una pequeña
+        configuración inicial.</p>
+      <p>En primer lugar le indicamos el punto de entrada a nuestra aplicación, en este caso ./src/index.js.</p>
+      <p>A continuación crearemos una una regla. En ella le indicamos mediante una expresión regular, que debe aplicarla
+        a todos los archivos terminados en .js o .jsx, que excluya los archivos de node_modules y que utilice para ello
+        babel-loader.</p>
+      <pre class="output-content">
+<span class="file-line">webpack.config.js</span> 
+<span class="add-line">
+module.exports = {
+  entry: ["./src/index.js"],
+    module: {
+      rules: [
+      {
+        test: /\.jsx?$/,
+        exclude: /node_modules/,
+        loader: "babel-loader",
+      },
+    ],
+  },
+};
+</span>
+</pre>
+      <h3 class="close"></h3>
+    </section>
+    <section>
+      <h3 class="open">Montar servidor ligero de desarrollo</h3>
+      <p>LLegados a este punto empieza a ser interesante montar nuestro propio servidor ligero, el cual nos permitira,
+        entre otras cosas, visualizar el proyecto en un entorno local y con recarga en vivo. Para ello instalaremos
+        webpack-dev-server.</p>
+      <pre class="output-content">
+npm install webpack-dev-server --save-dev</pre>
+
+      <p>A continuación tendremos que introducir unos pequeños ajustes en nuestro package.json, con el fin de habilitar
+        su uso mediante el comando, npm start.</p>
+      <pre class="output-content">
+<span class="file-line">package.json</span>
+
+"scripts": {
+    "build": "webpack --mode development",
+    <span class="add-line">"start": "webpack serve --mode development"</span>        
+},          
+    </pre>
+
+      <p>Además vamos a instalar un plugins que se va a encargar de generar nuestro documento html de salida e
+        inyectarle los archivos necesarios sin que tengamos que referenciarlos en nuestro html original.
+      </p>
+      <p>
+
+        Se trata de html-webpack-plugin. Crearemos la sección de plugins y la configuraremos para que cree un archivo de
+        salida llamado index.html a partir de la plantilla de la ruta src/index.html y que espere a cargar el contenido
+        de nuestros scripts. Una vez terminado podemos retirar la referencia nuestro archivo index.js en el html
+        original.</p>
+      <pre class="output-content">
+<span class="file-line">webpack.config.js</span>
+
+<span class="add-line">const htmlWebpackPlugin = require("html-webpack-plugin");
+  
+  
+  plugins: [
+  new htmlWebpackPlugin({
+    filename: "index.html",
+    template: "src/index.html",
+    scriptLoading: "blocking",                
+  }),
+],</span>
+
+</pre>
+      <h3 class="close"></h3>
+    </section>
+    <section>
+      <h3 class="open">Trabajando con Sass e imágenes</h3>
+      <p>Ahora vamos a preparar nuestro proyecto para poder dar estilos con Sass, para ello tendremos que instalar
+        varias cosas y modificar nuestra configuración.</p>
+
+      <p>En primer lugar necesitaremos el propio sass acompañado de sass-loader, que se encargará de transpilar los
+        archivos .scss a archivos .css. A continuación necesitaremos css-loader, para que webpack pueda trabajar con los
+        archivos. Y por ultimo, instalaremos mini-css-extract-plugin para poder extraer y procesar los archivos css
+        separados de los js.</p>
+      <pre class="output-content">npm install sass sass-loader css-loader mini-css-extract-plugin --save-dev</pre>
+
+      <p>Una vez instalados tendremos que importar mini-css-extract-plugin, y añadirlo en la seccion de plugin.</p>
+      <p>Además debemos añadir una nueva regla, para que webpack trabaje con los archivos terminados en .scss,
+        excluyendo los de node_modules, y utilizando los loaders que hemos comentado anteriormente en orden inverso.
+      </p>
+      <pre class="output-content">
+
+<span class="file-line">webpack.config.js</span>
+
+<span class="add-line">const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+  new MiniCssExtractPlugin({
+    filename: "style.css",
+    chunkFilename: "[id].css",
+  }),
+
+
+  {
+    test: /\.scss$/i,
+    exclude: /node_modules/,
+    use: [
+      MiniCssExtractPlugin.loader,
+      "css-loader",
+      "sass-loader",
+    ],
+  },
+</span></pre>
+
+
+      <p>Ahora tenemos que hacer que nuestros archivos .scss lleguen a webpack. Por ejemplo añadiendo un import a
+        nuestro index.js</p>
+      <pre class="output-content">
+<span class="file-line">index.js</span>
+
+<span class="add-line">import "./style.scss"</span>
+
+</span></pre>
+
+
+      <p>Por último vamos a añadir html-loader para poder trabajar con imagenes.</p>
+      <pre class="output-content">npm install html-loader --save-dev</pre>
+
+      <p> Y una vez instalado ajustamos nuestro webpack.config, añadiendo dos reglas para trabajar con imagenes tanto
+        dentro del propio html como inyectadas por la aplicacion de js.</p>
+      <pre class="output-content">
+<span class="file-line">webpack.config.js</span>
+
+<span class="add-line"> {
+  test: /\.(png|jpg)$/,
+  type: "asset/resource",
+},
+{
+  test: /\.html$/,
+  loader: "html-loader",
+},</span>
+</pre>
+      <h3 class="close"></h3>
+    </section>
+    <section>
+      <h3 class="open">Typescript</h3>
+      <p>Una vez más tendremos que comenzar por instalar los paquetes necesarios y posteriormente ajustar las
+        configuraciones. En este caso necesitaremos el propio typescript y los preset de babel para la transpilación.
+      </p>
+      <pre class="output-content">npm install typescript @babel/preset-typescript --save-dev</pre>
+      <p>A continuación y como ya hemos visto anteriormente tenemos que asegurarnos de que los archivos .ts, lleguen de
+        forma correcta al grafo de webpack. Para ello cambiamos la extension de nuestros ficheros a .ts y ajustamos la
+        configuración de webpack en entry y rules, y añadimos el apartado resolve para que webpack sepa que debe
+        trabajar con estos archivos.</p>
+      <pre class="output-content">
+<span class="file-line">webpack.config.js</span>
+
+module.exports = {
+  <span class="add-line">entry: ["./src/index.ts"],
+  resolve: {
+    extensions: [".ts", ".js"],
+  },</span>    
+  module: {
+    rules: [
+      {
+    <span class="add-line"> test: /\.(t|j)sx?$/,</span>   
+        exclude: /node_modules/,
+        loader: "babel-loader",
+      },}}
+</pre>
+      <p>Ahora añadiremos los nuevos preset a la configuracion de babel.</p>
+      <pre class="output-content">
+{
+  "presets": ["@babel/preset-env", <span class="add-line">"@babel/preset-typescript"</span>  ]
+}  
+</pre>
+
+      <p>Seguimos preparando la configuracion de typescript</p>
+      <pre class="output-content">
+<span class="file-line">webpack.config.js</span>
+
+<span class="add-line">
+  {
+    "compilerOptions": {
+      "target": "es6",
+      "module": "es6",
+      "moduleResolution": "node",
+      "declaration": false,
+      "noImplicitAny": false,
+      "allowSyntheticDefaultImports": true,
+      "sourceMap": true,
+      "jsx": "react",
+      "noLib": false,
+      "skipLibCheck": true,
+      "esModuleInterop": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules"]
+  }
+  
+</span>
+</pre>
+      <p>Además tendremos que añadir una declaracion para que typescript pueda importar los modulos de sass de forma
+        correcta</p>
+      <pre class="output-content">
+<span class="file-line">declaration.ts</span>
+
+<span class="add-line">
+  declare module '*.scss';
+</span>
+   </pre>
+      <p>Llegados a este punto, nuestro proyecto ya está preparado para trabajar con typescript, sin embargo no nos
+        estamos beneficiando de la principal herramienta que nos proporciona, la verificación de tipos. Para hacerlo de
+        una forma más eficiente instalaremos npm-run-all y modificaremos nuestros scripts en el package.json. Logrando
+        que al ejecutar el comando npm start, se lancen de forma paralela el servidor ligero y la verificación de tipos.
+      </p>
+      <pre>npm install npm-run-all --save-dev</pre>
+      <p>Dentro de nuestro package.json tenemos que realizar los siguientes cambios. De esta forma al ejecutar npm
+        start, estaremos lanzando en paralelo las dos opciones, además con -l, se nos mostrará por consola cada opción
+        en un color distinto, y con el --watch haremos que la verificación sea constante. Y con la opción noEmit
+        evitaremos generar archivos de salida limitandonos sólo a la verificación de tipos. </p>
+      <pre class="output-content">
+<span class="file-line">package.json</span>
+
+<span class="add-line">
+  "scripts": {     
+    "start": "run-p -l type-check start:dev",
+    "type-check": "tsc --noEmit --watch",
+    "start:dev": "webpack serve --mode development"
+  },
+</span>
+</pre>
+      <h3 class="close"></h3>
+    </section>
+    <section>
+      <h3 class="open">Breves modificaciones finales</h3>
+      <p>Por último vamos a realizar unas breves modificaciones. Primero añadiremos un context, para poder utilizar las
+        rutas relativas y simplificar el código. </p>
+      <pre class="output-content">
+<span class="file-line">webpack.config.js</span>
+
+<span class="add-line">const path = require("path");
+
+  
+"./index.ts"
+</span>
+<span class="delete-line"> "./src/index.js"</span>
+</pre>
+      <p>Finalmente vamos a especificar la ruta de nuestro servidor añadiendola a la configuración de webpack</p>
+      <pre>
+<span class="file-line">webpack.config.js</span>
+
+<span class="add-line">devServer: {
+  port: 8081,
+},</span>
+</pre>
+      <p>Este proyecto aún esta en fase de construcción, en la entrega extra se abordarán más cuestiones
+        para optimizarlo.</p>
+      <h3 class="close"></h3>
+    </section>
+  </div>
+  <h2 class="close"></h2>
+</body>
+</html>
